@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            border: 1px solid #ccc;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            z-index: 1000;
+        }
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+        .close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+        .modal {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            text-align: center;
+            width: 300px;
+        }
+        .button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        canvas {
+            background-color: #ffffe1;
+            display: block;
+            margin: auto;
+            border: 2px solid #000;
+        }
+        .footer {
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+            text-align: center;
+            font-size: 13px;
+            color: #666;
+        }
+        .footer a {
+            color: #007BFF; 
+            text-decoration: none;
+        }
+        .score {
+            text-align: center;
+            font-size: 20px;
+            margin-top: 10px;
+        }
+        .shop-button {
+            border-radius: 8px; 
+            padding: 10px 20px;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+    </style>
+</head>
+<body>
+<div style="display: flex;">
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<div class="score">Score: <span id="scoreDisplay">0</span></div>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<div class="score">Cumulative Score: <span id="cumulativeScoreDisplay">0</span></div>
+</div>
+    <canvas id="gameCanvas" width="1450" height="600"></canvas>
+    <div class="footer">
+        <p><a href="file:///C:/Users/Lenovo/Desktop/eatgame.html" target="_blank">More games</a>&nbsp;|&nbsp;<a href="" target="_blank">Join us</a>&nbsp;|&nbsp;<a href="https://mail.google.com/mail/u/0/?fs=1&tf=cm&source=mailto&to=sibo.jiang@lps-students.org" target="_blank">Contact me</a></p>
+        <p>&copy;&nbsp;2024&nbsp;Sibo.Jiang All rights reserved.&nbsp;&nbsp;Building on Microsoft's GitHub</p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const box = 20;
+        let snake = [{ x: 9 * box, y: 9 * box }];
+        let direction = 'RIGHT';
+        let food = generateFood();
+        let score = 0;
+        let cumulativeScore = parseInt(localStorage.getItem('cumulativeScore')) || 0;
+
+        document.addEventListener('keydown', changeDirection);
+        updateScoreDisplay();
+
+        function changeDirection(event) {
+            if (event.keyCode === 37 && direction !== 'RIGHT') {
+                direction = 'LEFT';
+            } else if (event.keyCode === 38 && direction !== 'DOWN') {
+                direction = 'UP';
+            } else if (event.keyCode === 39 && direction !== 'LEFT') {
+                direction = 'RIGHT';
+            } else if (event.keyCode === 40 && direction !== 'UP') {
+                direction = 'DOWN';
+            }
+        }
+
+        function generateFood() {
+            let foodPosition;
+            do {
+                foodPosition = {
+                    x: Math.floor(Math.random() * (canvas.width / box)) * box,
+                    y: Math.floor(Math.random() * (canvas.height / box)) * box,
+                };
+            } while (collision(foodPosition, snake)); 
+
+            const isPurple = Math.random() < 0.1;
+            return {
+                position: foodPosition,
+                color: isPurple ? 'purple' : 'green',
+            };
+        }
+
+        function collision(head, array) {
+            for (let i = 0; i < array.length; i++) {
+                if (head.x === array[i].x && head.y === array[i].y) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            document.getElementById('scoreDisplay').innerText = score;
+
+            ctx.fillStyle = food.color;
+            ctx.fillRect(food.position.x, food.position.y, box, box);
+            
+            for (let i = 0; i < snake.length; i++) {
+                ctx.fillStyle = 'red'; 
+                ctx.fillRect(snake[i].x, snake[i].y, box, box);
+                ctx.strokeStyle = 'black';
+                ctx.strokeRect(snake[i].x, snake[i].y, box, box);
+            }
+
+            let snakeX = snake[0].x;
+            let snakeY = snake[0].y;
+
+            if (direction === 'LEFT') snakeX -= box;
+            if (direction === 'UP') snakeY -= box;
+            if (direction === 'RIGHT') snakeX += box;
+            if (direction === 'DOWN') snakeY += box;
+
+            let newHead = { x: snakeX, y: snakeY };
+
+            if (snakeX === food.position.x && snakeY === food.position.y) {
+                if (food.color === 'green') {
+                    score++;
+                } else {
+                    let newFood;
+                    do {
+                        newFood = generateFood();
+                    } while (newFood.color !== 'green' || collision(newFood.position, snake));
+                    food = newFood;
+                    score++;
+                }
+                food = generateFood(); 
+            } else {
+                snake.pop(); 
+            }
+
+            if (snakeX < 0 || snakeY < 0 || snakeX >= canvas.width || snakeY >= canvas.height || collision(newHead, snake)) {
+                cumulativeScore += score; // Update cumulative score
+                localStorage.setItem('cumulativeScore', cumulativeScore); // Save to local storage
+
+                // Reset game state
+                alert("Game Over! Score: " + score + "\nCumulative Score: " + cumulativeScore);
+                score = 0; // Reset score
+                direction = 'RIGHT'; // Reset direction
+                snake = [{ x: 9 * box, y: 9 * box }]; // Reset snake position
+                food = generateFood(); // Generate new food
+                updateScoreDisplay(); // Update score display
+                
+                // Restart game
+                clearInterval(game);
+                game = setInterval(draw, 100); // Restart the interval
+                return;
+            }
+
+            snake.unshift(newHead); 
+        }
+
+        function updateScoreDisplay() {
+            document.getElementById('scoreDisplay').innerText = score;
+            document.getElementById('cumulativeScoreDisplay').innerText = cumulativeScore;
+        }
+
+        let game = setInterval(draw, 100);
+    </script>
+</body>
+</html>
